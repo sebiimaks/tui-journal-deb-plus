@@ -45,6 +45,7 @@ Before opening a PR, please read the [Contribution and AI Policy](#contribution-
 - [Features](#features)
 - [Roadmap](#roadmap)
 - [Installation](#installation)
+  - [Debian and Ubuntu](#debian-and-ubuntu)
   - [Arch Linux](#arch-linux)
   - [Alpine Linux](#alpine-linux)
   - [FreeBSD](#freebsd)
@@ -101,6 +102,40 @@ Before opening a PR, please read the [Contribution and AI Policy](#contribution-
 ## Installation
 
 Grab the most recent pre-built binaries for your platform from the [Releases page](https://github.com/AmmarAbouZor/tui-journal/releases), or utilize the available package managers.
+
+### Debian and Ubuntu
+
+This fork builds `.deb` packages for **amd64** and **arm64** using Debian 12
+(Bookworm). The packages target Debian 12 or newer and Ubuntu 24.04 or newer.
+They include the JSON, SQLite, and `VJOURNAL` back-ends and install the `tjournal`
+command into `/usr/bin`.
+
+Open [Build Debian packages](https://github.com/sebiimaks/tui-journal-deb-plus/actions/workflows/deb.yml)
+in GitHub Actions and select **Run workflow**, or open a successful run. The
+workflow also runs on pushes to `main`, `v*` tags, and pull requests targeting
+`main`. Download the `tui-journal-deb-amd64` or `tui-journal-deb-arm64` artifact
+matching the output of `dpkg --print-architecture`, then extract its ZIP file.
+Artifacts are retained for 30 days.
+
+Install the extracted package with APT so its runtime dependencies are installed:
+
+```bash
+sudo apt install ./tui-journal_*.deb
+tjournal --version
+```
+
+To build the same package locally on Debian 12 or newer, install Rust 1.92.0 or
+newer and run:
+
+```bash
+sudo apt-get update
+sudo apt-get install build-essential dpkg-dev liblzma-dev pkg-config
+cargo install cargo-deb --version '=3.8.0' --locked
+cargo deb --locked
+```
+
+The resulting package is written to `target/debian/` with its version taken from
+`Cargo.toml`.
 
 ### Arch Linux
 

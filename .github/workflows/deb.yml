@@ -1,0 +1,85 @@
+name: Build Debian packages
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+    tags: ["v*"]
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deb-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-deb:
+    name: Build .deb (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    # Build against Debian 12's libraries for a stable compatibility baseline.
+    container: rust:1-bookworm
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install packaging dependencies
+        run: |
+          apt-get update
+          apt-get install --yes --no-install-recommends \
+            dpkg-dev liblzma-dev pkg-config
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2.9.2
+        with:
+          key: deb-bookworm-${{ matrix.arch }}
+
+      - name: Install cargo-deb
+        run: cargo install cargo-deb --version '=3.8.0' --locked
+
+      - name: Build Debian package
+        run: cargo deb --locked
+
+      - name: Inspect and install package
+        env:
+          EXPECTED_ARCH: ${{ matrix.arch }}
+        run: |
+          packages=(target/debian/*.deb)
+          test "${#packages[@]}" -eq 1
+          package="${packages[0]}"
+          test "$(dpkg-deb --field "$package" Package)" = tui-journal
+          test "$(dpkg-deb --field "$package" Architecture)" = "$EXPECTED_ARCH"
+          dpkg-deb --info "$package"
+          dpkg-deb --contents "$package"
+          apt-get install --yes "./$package"
+          /usr/bin/tjournal --version
+          /usr/bin/tjournal --help
+
+      - name: Upload Debian package
+        uses: actions/upload-artifact@v7
+        with:
+          name: tui-journal-deb-${{ matrix.arch }}
+          path: target/debian/*.deb
+          if-no-files-found: error
+          retention-days: 30

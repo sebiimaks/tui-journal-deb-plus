@@ -11,6 +11,19 @@ categories = ["command-line-utilities"]
 keywords = ["tui", "terminal-app", "journal", "cli", "ui"]
 rust-version = "1.92.0"
 
+[package.metadata.deb]
+maintainer = "sebiimaks <sebiimaks@users.noreply.github.com>"
+license-file = ["LICENSE", "0"]
+depends = "$auto"
+section = "utils"
+priority = "optional"
+extended-description = "A terminal journal and note manager with JSON, SQLite, and iCalendar VJOURNAL back-ends."
+assets = [
+    ["target/release/tjournal", "usr/bin/", "755"],
+    ["README.md", "usr/share/doc/tui-journal/README.md", "644"],
+    ["THEMES.md", "usr/share/doc/tui-journal/THEMES.md", "644"],
+]
+
 [dependencies]
 anyhow = "1.0"
 tokio = { version = "1.53", features = ["full"] }
